@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <assert.h>
 
+#include "nghttp2_frame.h"
 #include "nghttp2_helper.h"
 
 ssize_t hx_get_buf_chunk_length(hx_normal_distribution *dist) {
@@ -41,7 +42,7 @@ void hx_nghttp2_buf_resize(nghttp2_buf *buf, size_t new_cap) {
 
     cap = nghttp2_buf_cap(buf);
 
-    assert(new_cap <= cap);
+    assert(new_cap <= NGHTTP2_FRAMEBUF_CHUNKLEN);
 
     if (new_cap == cap) return;
 

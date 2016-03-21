@@ -17,6 +17,8 @@ void hx_random_init() {
     unsigned int seed = (unsigned int)time(NULL);
     srand(seed);
     DEBUGF(fprintf(stderr, "[h1994st] random module initialized, seed=%u\n", seed));
+
+    hx_random_initialized = 1;
 }
 
 void hx_normal_dist_new(hx_normal_distribution **dist_ptr, double mean, double sigma, nghttp2_mem *mem) {
