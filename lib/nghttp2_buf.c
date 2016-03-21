@@ -127,6 +127,14 @@ int nghttp2_bufs_init3(nghttp2_bufs *bufs, size_t chunk_length,
   int rv;
   nghttp2_buf_chain *chain;
 
+  if (bufs->random_enabled) {
+    // 0. init random module
+    hx_random_init();
+
+    // 1. init buffer chunk length generator
+    hx_nghttp2_bufs_init_buf_chunk_length_generator(bufs, mem);
+  }
+
   if (chunk_keep == 0 || max_chunk < chunk_keep || chunk_length < offset) {
     return NGHTTP2_ERR_INVALID_ARGUMENT;
   }
@@ -142,12 +150,18 @@ int nghttp2_bufs_init3(nghttp2_bufs *bufs, size_t chunk_length,
   bufs->head = chain;
   bufs->cur = bufs->head;
 
-  nghttp2_buf_shift_right(&bufs->cur->buf, offset);
+  nghttp2_buf_shift_right(&bufs->cur->buf, offset); 
 
   bufs->chunk_length = chunk_length;
   bufs->chunk_used = 1;
   bufs->max_chunk = max_chunk;
   bufs->chunk_keep = chunk_keep;
+
+  // h1994st:
+  if (bufs->random_enabled) {
+    // Resize the first chunk
+    hx_nghttp2_buf_resize(&bufs->cur->buf, hx_get_buf_chunk_length(bufs->buf_chunk_length_gen));
+  }
 
   return 0;
 }
@@ -175,6 +189,12 @@ int nghttp2_bufs_realloc(nghttp2_bufs *bufs, size_t chunk_length) {
   bufs->chunk_length = chunk_length;
   bufs->chunk_used = 1;
 
+  // h1994st:
+  if (bufs->random_enabled) {
+    // Resize the first chunk
+    hx_nghttp2_buf_resize(&bufs->cur->buf, hx_get_buf_chunk_length(bufs->buf_chunk_length_gen));
+  }
+
   return 0;
 }
 
@@ -194,6 +214,11 @@ void nghttp2_bufs_free(nghttp2_bufs *bufs) {
   }
 
   bufs->head = NULL;
+
+  // h1994st:
+  if (bufs->random_enabled) {
+      hx_normal_dist_del(bufs->buf_chunk_length_gen, bufs->mem);
+  }
 }
 
 int nghttp2_bufs_wrap_init(nghttp2_bufs *bufs, uint8_t *begin, size_t len,
@@ -272,7 +297,8 @@ static int bufs_alloc_chain(nghttp2_bufs *bufs) {
     return 0;
   }
 
-  if (bufs->max_chunk == bufs->chunk_used) {
+  // h1994st:
+  if (!bufs->random_enabled && bufs->max_chunk == bufs->chunk_used) {
     return NGHTTP2_ERR_BUFFER_ERROR;
   }
 
@@ -292,6 +318,12 @@ static int bufs_alloc_chain(nghttp2_bufs *bufs) {
 
   nghttp2_buf_shift_right(&bufs->cur->buf, bufs->offset);
 
+  // h1994st:
+  if (bufs->random_enabled) {
+    // Resize current chunk
+    hx_nghttp2_buf_resize(&bufs->cur->buf, hx_get_buf_chunk_length(bufs->buf_chunk_length_gen));
+  }
+
   return 0;
 }
 
@@ -301,7 +333,8 @@ int nghttp2_bufs_add(nghttp2_bufs *bufs, const void *data, size_t len) {
   nghttp2_buf *buf;
   const uint8_t *p;
 
-  if (bufs_avail(bufs) < len) {
+  // h1994st:
+  if (!bufs->random_enabled && bufs_avail(bufs) < len) {
     return NGHTTP2_ERR_BUFFER_ERROR;
   }
 
@@ -459,6 +492,12 @@ void nghttp2_bufs_reset(nghttp2_bufs *bufs) {
   for (ci = bufs->head; ci; ci = ci->next) {
     nghttp2_buf_reset(&ci->buf);
     nghttp2_buf_shift_right(&ci->buf, bufs->offset);
+
+    // h1994st:
+    if (bufs->random_enabled) {
+      // Resize each kept chunk
+      hx_nghttp2_buf_resize(&ci->buf, hx_get_buf_chunk_length(bufs->buf_chunk_length_gen));
+    }
 
     if (--k == 0) {
       break;

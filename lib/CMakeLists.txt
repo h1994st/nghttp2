@@ -23,6 +23,8 @@ set(NGHTTP2_SOURCES
   nghttp2_mem.c
   nghttp2_http.c
   nghttp2_rcbuf.c
+  hx_random.c
+  hx_buf.c
 )
 
 # Public shared library

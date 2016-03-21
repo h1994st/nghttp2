@@ -34,6 +34,9 @@
 #include "nghttp2_int.h"
 #include "nghttp2_mem.h"
 
+// h1994st:
+#include "hx_random.h"
+
 typedef struct {
   /* This points to the beginning of the buffer. The effective range
      of buffer is [begin, end). */
@@ -150,6 +153,10 @@ typedef struct {
      reset, buf->pos and buf->last are positioned at buf->begin +
      offset. */
   size_t offset;
+
+  // h1994st:
+  uint8_t random_enabled;
+  hx_normal_distribution *buf_chunk_length_gen;
 } nghttp2_bufs;
 
 /*

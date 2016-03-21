@@ -419,6 +419,7 @@ static int session_new(nghttp2_session **session_ptr,
     (*session_ptr)->server = 1;
   }
 
+  (*session_ptr)->aob.framebufs.random_enabled = 1; // Enable random
   /* 1 for Pad Field. */
   rv = nghttp2_bufs_init3(&(*session_ptr)->aob.framebufs,
                           NGHTTP2_FRAMEBUF_CHUNKLEN, NGHTTP2_FRAMEBUF_MAX_NUM,
