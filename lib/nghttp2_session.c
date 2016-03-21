@@ -6574,6 +6574,9 @@ int nghttp2_session_pack_data(nghttp2_session *session, nghttp2_bufs *bufs,
   }
 
   /* Current max DATA length is less then buffer chunk size */
+  if (bufs->random_enabled) {
+    datamax = nghttp2_min(datamax, nghttp2_buf_avail(buf));
+  }
   assert(nghttp2_buf_avail(buf) >= datamax);
 
   data_flags = NGHTTP2_DATA_FLAG_NONE;
