@@ -3,6 +3,7 @@
 
 #include "nghttp2_int.h"
 #include "nghttp2_mem.h"
+#include "nghttp2_buf.h"
 #include "hx_random.h"
 
 #define HX_FRAME_PAYLOAD_LEN_MIN 36

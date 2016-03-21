@@ -7,6 +7,7 @@
 #include <assert.h>
 
 #include "nghttp2_int.h"
+#include "nghttp2_helper.h"
 
 uint8_t hx_random_initialized = 0; // Default: 0
 
@@ -44,7 +45,7 @@ void hx_normal_dist_del(hx_normal_distribution *dist, nghttp2_mem *mem) {
 double hx_randn(hx_normal_distribution *dist) {
     assert(hx_random_initialized);
 
-    double U1, Y2, W, mult;
+    double U1, U2, W, mult;
 
     if (dist->call) {
         dist->call = 0;
@@ -67,7 +68,7 @@ double hx_randn(hx_normal_distribution *dist) {
 }
 
 int32_t hx_rand(int32_t min, int32_t max) {
-    assert(hx_ranom_initialized);
+    assert(hx_random_initialized);
 
     if (min >= max) return min;
 

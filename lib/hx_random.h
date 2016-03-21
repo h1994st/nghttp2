@@ -2,6 +2,7 @@
 #define hx_nghttp2_h
 
 #include <stdint.h>
+#include <math.h>
 
 #include "nghttp2_int.h"
 #include "nghttp2_mem.h"

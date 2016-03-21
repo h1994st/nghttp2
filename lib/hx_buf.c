@@ -1,5 +1,9 @@
-#include "hx_buf.c"
+#include "hx_buf.h"
 #include <stdint.h>
+#include <stdio.h>
+#include <assert.h>
+
+#include "nghttp2_helper.h"
 
 ssize_t hx_get_buf_chunk_length(hx_normal_distribution *dist) {
     ssize_t chunk_len = 0;
