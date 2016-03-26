@@ -591,7 +591,14 @@ typedef enum {
    * callbacks because the library processes this frame type and its
    * preceding HEADERS/PUSH_PROMISE as a single frame.
    */
-  NGHTTP2_CONTINUATION = 0x09
+  NGHTTP2_CONTINUATION = 0x09,
+
+  /**
+   * h1994st:
+   */
+  NGHTTP2_ALT_SVC = 0x0A,
+  NGHTTP2_LAST = 0x0B,
+  HX_NGHTTP2_DUMMY = 0x0C
 } nghttp2_frame_type;
 
 /**
@@ -1157,6 +1164,15 @@ typedef struct {
   uint8_t reserved;
 } nghttp2_window_update;
 
+struct hx_nghttp2_dummy;
+/**
+ * @struct
+ *
+ * [h1994st] The DUMMY frame.  The details of this
+ * structure are intentionally hidden from the public API.
+ */
+typedef struct hx_nghttp2_dummmy hx_nghttp2_dummy;
+
 /**
  * @struct
  *
@@ -1225,6 +1241,10 @@ typedef union {
    * The WINDOW_UPDATE frame.
    */
   nghttp2_window_update window_update;
+  /**
+   * [h1994st] The DUMMY frame. 
+   */
+  hx_nghttp2_dummy dummy;
   /**
    * The extension frame.
    */
@@ -2386,6 +2406,19 @@ nghttp2_option_set_user_recv_extension_type(nghttp2_option *option,
  */
 NGHTTP2_EXTERN void nghttp2_option_set_no_auto_ping_ack(nghttp2_option *option,
                                                         int val);
+
+/**
+ * @function
+ *
+ * This option enables the library to defense website fingerprinting
+ * attack.  If |val| is set to nonzero, the library will allocate the
+ * buffer randomly so that the size of the outbound frame is not
+ * fixed.  Besides, if |dummy_frame_injection| is set to nonzero, the
+ * library will inject dummy frames in order to fill it to the full.
+ */
+NGHTTP2_EXTERN void hx_nghttp2_option_set_wfp_defense(nghttp2_option *option,
+                                                      int val,
+                                                      int dummy_frame_injection);
 
 /**
  * @function

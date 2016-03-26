@@ -128,11 +128,11 @@ int nghttp2_bufs_init3(nghttp2_bufs *bufs, size_t chunk_length,
   nghttp2_buf_chain *chain;
 
   if (bufs->random_enabled) {
-    // 0. init random module
-    hx_random_init();
-
-    // 1. init buffer chunk length generator
+    /* Initialize buffer chunk length generator. */
     hx_nghttp2_bufs_init_buf_chunk_length_generator(bufs, mem);
+
+    /* TODO Set a callback function which will return a random number
+       each time. */
   }
 
   if (chunk_keep == 0 || max_chunk < chunk_keep || chunk_length < offset) {

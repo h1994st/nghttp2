@@ -65,7 +65,13 @@ void nghttp2_option_set_max_reserved_remote_streams(nghttp2_option *option,
 
 void nghttp2_option_set_user_recv_extension_type(nghttp2_option *option,
                                                  uint8_t type) {
-  if (type < 10) {
+  /**
+   * Reserve three more types of frame:
+   * 0x0A: ALT_SVC
+   * 0x0B:
+   * 0x0C: DUMMY
+   */
+  if (type < 10 + 3) {
     return;
   }
 
@@ -78,3 +84,11 @@ void nghttp2_option_set_no_auto_ping_ack(nghttp2_option *option, int val) {
   option->opt_set_mask |= NGHTTP2_OPT_NO_AUTO_PING_ACK;
   option->no_auto_ping_ack = val;
 }
+
+void hx_nghttp2_option_set_wfp_defense(nghttp2_option *option, int val,
+                                       int dummy_frame_injection) {
+  option->opt_set_mast |= HX_NGHTTP2_OPT_WFP_DEFENSE;
+  option->wfp_defense = val;
+  option->dummy_frame_injection = dummy_frame_injection;
+}
+

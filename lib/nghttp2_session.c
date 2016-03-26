@@ -37,6 +37,9 @@
 #include "nghttp2_http.h"
 #include "nghttp2_pq.h"
 
+// h1994st:
+#include "hx_frame.h"
+
 /*
  * Returns non-zero if the number of outgoing opened streams is larger
  * than or equal to
@@ -314,6 +317,8 @@ static void session_inbound_frame_reset(nghttp2_session *session) {
   case NGHTTP2_WINDOW_UPDATE:
     nghttp2_frame_window_update_free(&iframe->frame.window_update);
     break;
+  case HX_NGHTTP2_DUMMY:
+    hx_nghttp2_frame_dummy_free(&iframe->frame.dummy);
   default:
     /* extension frame */
     nghttp2_frame_extension_free(&iframe->frame.ext);
@@ -419,7 +424,27 @@ static int session_new(nghttp2_session **session_ptr,
     (*session_ptr)->server = 1;
   }
 
-  (*session_ptr)->aob.framebufs.random_enabled = 1; // Enable random
+  // h1994st:
+  if (option) {
+    if ((option->opt_set_mask & HX_NGHTTP2_OPT_WFP_DEFENSE) &&
+        option->wfp_defense) {
+
+      (*session_ptr)->opt_flags |= HX_NGHTTP2_OPTMASK_WFP_DEFENSE;
+
+      /* h1994st: Dummy frame injection. */
+      if (option->dummy_frame_injection) {
+        (*session_ptr)->opt_flags |= HX_NGHTTP2_OPTMAST_DUMMY_FRAME_INJECTION;
+      }
+
+      /* h1994st: Initialize random module. */
+      hx_random_init();
+
+      /* h1994st: Enable random allocation in outbound item
+         frame buffers. */
+      (*session_ptr)->aob.framebufs.random_enabled = 1;
+    }
+  }
+
   /* 1 for Pad Field. */
   rv = nghttp2_bufs_init3(&(*session_ptr)->aob.framebufs,
                           NGHTTP2_FRAMEBUF_CHUNKLEN, NGHTTP2_FRAMEBUF_MAX_NUM,
@@ -1675,8 +1700,18 @@ nghttp2_session_enforce_flow_control_limits(nghttp2_session *session,
                  session->remote_settings.max_frame_size, stream->stream_id,
                  stream->remote_window_size));
 
-  return nghttp2_min(nghttp2_min(nghttp2_min(requested_window_size,
-                                             stream->remote_window_size),
+  ssize_t rv = requested_window_size;
+  /* h1994st: Check whether WFP defense in the local session is enabled.
+     Then take into account the available space in the current buffer. */
+  if (session->opt_flags & HX_NGHTTP2_OPTMASK_WFP_DEFENSE) {
+
+    DEBUGF(fprintf(stderr, "[h1994st] send: current buf avail=%d\n",
+                   nghttp2_bufs_cur_avail(&session->aob.framebufs)));
+
+    rv = nghttp2_min(rv, nghttp2_bufs_cur_avail(&session->aob.framebufs));
+  }
+
+  return nghttp2_min(nghttp2_min(nghttp2_min(rv, stream->remote_window_size),
                                  session->remote_window_size),
                      (int32_t)session->remote_settings.max_frame_size);
 }
@@ -1785,12 +1820,22 @@ static int session_headers_add_pad(nghttp2_session *session,
   nghttp2_bufs *framebufs;
   size_t padlen;
   size_t max_payloadlen;
+  size_t avail;
 
   aob = &session->aob;
   framebufs = &aob->framebufs;
+  avail = nghttp2_buf_avail(&framebufs->head->buf);
 
   max_payloadlen = nghttp2_min(NGHTTP2_MAX_PAYLOADLEN,
                                frame->hd.length + NGHTTP2_MAX_PADLEN);
+
+  // h1994st:
+  if ((session->opt_flags & HX_NGHTTP2_OPTMASK_WFP_DEFENSE) &&
+      framebufs->random_enabled) {
+    // h1994st: Consider about the actual available size of the buffer
+    max_payloadlen = nghttp2_min(frame->hd.length + avail,
+                                 max_payloadlen);
+  }
 
   padded_payloadlen =
       session_call_select_padding(session, frame, max_payloadlen);
@@ -1800,6 +1845,25 @@ static int session_headers_add_pad(nghttp2_session *session,
   }
 
   padlen = (size_t)padded_payloadlen - frame->hd.length;
+
+  /* h1994st: Check the rest space in the buffer and reserve space for
+     DUMMY frame. */
+  if ((session->opt_flags & HX_NGHTTP2_OPTMASK_WFP_DEFENSE) &&
+      (session->opt_flags & HX_NGHTTP2_OPTMASK_DUMMY_FRAME_INJECTION)) {
+    assert(availe <= padlen)
+
+    if (avail != padlen && avail < padlen + NGHTTP2_FRAME_HDLEN) {
+      DEBUGF(fprintf(stderr, "[h1994st] send: reserve %d bytes for "
+                             "DUMMY frame\n", NGHTTP2_FRAME_HD_LEN));
+      DEBUGF(fprintf(stderr, "[h1994st] send: before reserving, padlen=%u\n",
+                     padlen));
+
+      padlen = avail - NGHTTP2_FRAME_HDLEN; // h1994st: Reserve at least 9 bytes for DUMMY frame
+
+      DEBUGF(fprintf(stderr, "[h1994st] send: after reserving, padlen=%u\n",
+                     padlen));
+    }
+  }
 
   DEBUGF(fprintf(stderr, "send: padding selected: payloadlen=%zd, padlen=%zu\n",
                  padded_payloadlen, padlen));
@@ -6574,9 +6638,9 @@ int nghttp2_session_pack_data(nghttp2_session *session, nghttp2_bufs *bufs,
   }
 
   /* Current max DATA length is less then buffer chunk size */
-  if (bufs->random_enabled) {
-    datamax = nghttp2_min(datamax, nghttp2_buf_avail(buf));
-  }
+  // if (bufs->random_enabled) {
+  //   datamax = nghttp2_min(datamax, nghttp2_buf_avail(buf));
+  // }
   assert(nghttp2_buf_avail(buf) >= datamax);
 
   data_flags = NGHTTP2_DATA_FLAG_NONE;
@@ -6638,6 +6702,26 @@ int nghttp2_session_pack_data(nghttp2_session *session, nghttp2_bufs *bufs,
   }
 
   frame->data.padlen = (size_t)(padded_payloadlen - payloadlen);
+
+  /* h1994st: Check the rest space in the buffer and reserve space for
+     DUMMY frame. */
+  if ((session->opt_flags & HX_NGHTTP2_OPTMASK_WFP_DEFENSE) &&
+      (session->opt_flags & HX_NGHTTP2_OPTMASK_DUMMY_FRAME_INJECTION)) {
+    assert(nghttp2_buf_avail(buf) <= frame->data.padlen)
+
+    if (nghttp2_buf_avail(buf) != frame->data.padlen &&
+        nghttp2_buf_avail(buf) < frame->data.padlen + NGHTTP2_FRAME_HDLEN) {
+      DEBUGF(fprintf(stderr, "[h1994st] send: reserve %d bytes for "
+                             "DUMMY frame\n", NGHTTP2_FRAME_HD_LEN));
+      DEBUGF(fprintf(stderr, "[h1994st] send: before reserving, padlen=%u\n",
+                     frame->data.padlen));
+
+      frame->data.padlen = nghttp2_buf_avail(buf) - NGHTTP2_FRAME_HDLEN; // h1994st: Reserve at least 9 bytes for DUMMY frame
+
+      DEBUGF(fprintf(stderr, "[h1994st] send: after reserving, padlen=%u\n",
+                     frame->data.padlen));
+    }
+  }
 
   nghttp2_frame_pack_frame_hd(buf->pos, &frame->hd);
 
