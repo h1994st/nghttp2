@@ -6,17 +6,6 @@
 #include "nghttp2_buf.h"
 #include "nghttp2_frame.h"
 
-struct hx_nghttp2_dummy {
-    /**
-     * THe frame header.
-     */
-    nghttp2_frame_hd hd;
-
-    /**
-     * Dummy payload. Must skip it.
-     */
-};
-
 /**
  * Packs DUMMY frame |frame| in wire format and store it in |bufs|.
  * This function fill the current buffer to the full.
@@ -43,11 +32,9 @@ void hx_nghttp2_frame_unpack_dummy_payload(hx_nghttp2_dummy *frame,
                                           size_t payloadlen);
 
 /**
- * Initializes DUMMY frame |frame| with given values. If |stream_id| is not
- * assigned yet, it must be -1.
+ * Initializes DUMMY frame |frame| with given payload length.
  */
-void hx_nghttp2_frame_dummy_init(hx_nghttp2_dummy *frame, int32_t flags,
-                                 int32_t stream_id);
+void hx_nghttp2_frame_dummy_init(hx_nghttp2_dummy *frame, size_t payloadlen);
 
 void hx_nghttp2_frame_dummy_free(hx_nghttp2_dummy *frame);
 

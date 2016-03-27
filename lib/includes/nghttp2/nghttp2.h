@@ -1164,14 +1164,22 @@ typedef struct {
   uint8_t reserved;
 } nghttp2_window_update;
 
-struct hx_nghttp2_dummy;
 /**
  * @struct
  *
  * [h1994st] The DUMMY frame.  The details of this
  * structure are intentionally hidden from the public API.
  */
-typedef struct hx_nghttp2_dummmy hx_nghttp2_dummy;
+typedef struct {
+  /**
+   * The frame header.
+   */
+  nghttp2_frame_hd hd;
+
+  /**
+   * Dummy payload.  Must be skipped.
+   */
+} hx_nghttp2_dummy;
 
 /**
  * @struct

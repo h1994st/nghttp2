@@ -2505,6 +2505,8 @@ Options:
   --max-concurrent-streams=<N>
               The  number of  concurrent  pushed  streams this  client
               accepts.
+  --wfp-defense
+              Enable website fingerprinting defense.
   --version   Display version information and exit.
   -h, --help  Display this help and exit.
 
@@ -2556,6 +2558,7 @@ int main(int argc, char **argv) {
         {"hexdump", no_argument, &flag, 10},
         {"no-push", no_argument, &flag, 11},
         {"max-concurrent-streams", required_argument, &flag, 12},
+        {"wfp-defense", no_argument, &flag, 13}, /* h1994st: WFP Defense Option*/
         {nullptr, 0, nullptr, 0}};
     int option_index = 0;
     int c = getopt_long(argc, argv, "M:Oab:c:d:gm:np:r:hH:vst:uw:W:",
@@ -2753,6 +2756,10 @@ int main(int argc, char **argv) {
         // max-concurrent-streams option
         config.max_concurrent_streams = strtoul(optarg, nullptr, 10);
         break;
+      case 13:
+        // h1994st: wfp-defense option
+        config.wfp_defense = true;
+        break;
       }
       break;
     default:
@@ -2764,6 +2771,11 @@ int main(int argc, char **argv) {
 
   nghttp2_option_set_peer_max_concurrent_streams(
       config.http2_option, config.peer_max_concurrent_streams);
+
+  // h1994st: Enable website fingerprinting defense
+  if (config.wfp_defense) {
+    hx_nghttp2_option_set_wfp_defense(config.http2_option, 1, 1);
+  }
 
   struct sigaction act {};
   act.sa_handler = SIG_IGN;

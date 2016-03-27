@@ -91,6 +91,7 @@ struct Config {
   bool no_dep;
   bool hexdump;
   bool no_push;
+  bool wfp_defense; /* h1994st: WFP Defense Flag. */
 };
 
 enum class RequestState { INITIAL, ON_REQUEST, ON_RESPONSE, ON_COMPLETE };
