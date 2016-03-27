@@ -26,6 +26,7 @@
 
 #include <stdio.h>
 
+#include "hx_buf.h"
 #include "nghttp2_helper.h"
 
 void nghttp2_buf_init(nghttp2_buf *buf) {

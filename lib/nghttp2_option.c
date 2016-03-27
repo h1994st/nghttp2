@@ -87,7 +87,7 @@ void nghttp2_option_set_no_auto_ping_ack(nghttp2_option *option, int val) {
 
 void hx_nghttp2_option_set_wfp_defense(nghttp2_option *option, int val,
                                        int dummy_frame_injection) {
-  option->opt_set_mast |= HX_NGHTTP2_OPT_WFP_DEFENSE;
+  option->opt_set_mask |= HX_NGHTTP2_OPT_WFP_DEFENSE;
   option->wfp_defense = val;
   option->dummy_frame_injection = dummy_frame_injection;
 }

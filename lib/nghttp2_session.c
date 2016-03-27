@@ -433,7 +433,7 @@ static int session_new(nghttp2_session **session_ptr,
 
       /* h1994st: Dummy frame injection. */
       if (option->dummy_frame_injection) {
-        (*session_ptr)->opt_flags |= HX_NGHTTP2_OPTMAST_DUMMY_FRAME_INJECTION;
+        (*session_ptr)->opt_flags |= HX_NGHTTP2_OPTMASK_DUMMY_FRAME_INJECTION;
       }
 
       /* h1994st: Initialize random module. */
@@ -1705,7 +1705,7 @@ nghttp2_session_enforce_flow_control_limits(nghttp2_session *session,
      Then take into account the available space in the current buffer. */
   if (session->opt_flags & HX_NGHTTP2_OPTMASK_WFP_DEFENSE) {
 
-    DEBUGF(fprintf(stderr, "[h1994st] send: current buf avail=%d\n",
+    DEBUGF(fprintf(stderr, "[h1994st] send: current buf avail=%zu\n",
                    nghttp2_bufs_cur_avail(&session->aob.framebufs)));
 
     rv = nghttp2_min(rv, nghttp2_bufs_cur_avail(&session->aob.framebufs));
@@ -1850,17 +1850,17 @@ static int session_headers_add_pad(nghttp2_session *session,
      DUMMY frame. */
   if ((session->opt_flags & HX_NGHTTP2_OPTMASK_WFP_DEFENSE) &&
       (session->opt_flags & HX_NGHTTP2_OPTMASK_DUMMY_FRAME_INJECTION)) {
-    assert(availe <= padlen)
+    assert(avail <= padlen);
 
     if (avail != padlen && avail < padlen + NGHTTP2_FRAME_HDLEN) {
       DEBUGF(fprintf(stderr, "[h1994st] send: reserve %d bytes for "
-                             "DUMMY frame\n", NGHTTP2_FRAME_HD_LEN));
-      DEBUGF(fprintf(stderr, "[h1994st] send: before reserving, padlen=%u\n",
+                             "DUMMY frame\n", NGHTTP2_FRAME_HDLEN));
+      DEBUGF(fprintf(stderr, "[h1994st] send: before reserving, padlen=%zu\n",
                      padlen));
 
       padlen = avail - NGHTTP2_FRAME_HDLEN; // h1994st: Reserve at least 9 bytes for DUMMY frame
 
-      DEBUGF(fprintf(stderr, "[h1994st] send: after reserving, padlen=%u\n",
+      DEBUGF(fprintf(stderr, "[h1994st] send: after reserving, padlen=%zu\n",
                      padlen));
     }
   }
@@ -6707,18 +6707,18 @@ int nghttp2_session_pack_data(nghttp2_session *session, nghttp2_bufs *bufs,
      DUMMY frame. */
   if ((session->opt_flags & HX_NGHTTP2_OPTMASK_WFP_DEFENSE) &&
       (session->opt_flags & HX_NGHTTP2_OPTMASK_DUMMY_FRAME_INJECTION)) {
-    assert(nghttp2_buf_avail(buf) <= frame->data.padlen)
+    assert(nghttp2_buf_avail(buf) <= frame->data.padlen);
 
     if (nghttp2_buf_avail(buf) != frame->data.padlen &&
         nghttp2_buf_avail(buf) < frame->data.padlen + NGHTTP2_FRAME_HDLEN) {
       DEBUGF(fprintf(stderr, "[h1994st] send: reserve %d bytes for "
-                             "DUMMY frame\n", NGHTTP2_FRAME_HD_LEN));
-      DEBUGF(fprintf(stderr, "[h1994st] send: before reserving, padlen=%u\n",
+                             "DUMMY frame\n", NGHTTP2_FRAME_HDLEN));
+      DEBUGF(fprintf(stderr, "[h1994st] send: before reserving, padlen=%zu\n",
                      frame->data.padlen));
 
       frame->data.padlen = nghttp2_buf_avail(buf) - NGHTTP2_FRAME_HDLEN; // h1994st: Reserve at least 9 bytes for DUMMY frame
 
-      DEBUGF(fprintf(stderr, "[h1994st] send: after reserving, padlen=%u\n",
+      DEBUGF(fprintf(stderr, "[h1994st] send: after reserving, padlen=%zu\n",
                      frame->data.padlen));
     }
   }
