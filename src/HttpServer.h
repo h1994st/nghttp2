@@ -65,6 +65,7 @@ struct Config {
   ev_tstamp stream_read_timeout;
   ev_tstamp stream_write_timeout;
   void *data_ptr;
+  nghttp2_option *http2_option; /* h1994st: option object */
   size_t padding;
   size_t num_worker;
   size_t max_concurrent_streams;
@@ -81,6 +82,7 @@ struct Config {
   bool hexdump;
   bool echo_upload;
   bool no_content_length;
+  bool defense; /* h1994st: Defense Flag. */
   Config();
   ~Config();
 };

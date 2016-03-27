@@ -2418,10 +2418,10 @@ NGHTTP2_EXTERN void nghttp2_option_set_no_auto_ping_ack(nghttp2_option *option,
 /**
  * @function
  *
- * This option enables the library to defense website fingerprinting
- * attack.  If |val| is set to nonzero, the library will allocate the
- * buffer randomly so that the size of the outbound frame is not
- * fixed.  Besides, if |dummy_frame_injection| is set to nonzero, the
+ * This option enables the library to defense some attacks.  If
+ * |val| is set to nonzero, the library will allocate the buffer
+ * randomly so that the size of the outbound frame is not fixed.
+ * Besides, if |dummy_frame_injection| is set to nonzero, the
  * library will inject dummy frames in order to fill it to the full.
  */
 NGHTTP2_EXTERN void hx_nghttp2_option_set_wfp_defense(nghttp2_option *option,

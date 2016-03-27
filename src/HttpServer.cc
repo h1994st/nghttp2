@@ -107,9 +107,13 @@ Config::Config()
       early_response(false),
       hexdump(false),
       echo_upload(false),
-      no_content_length(false) {}
+      no_content_length(false),
+      defense(false) {
+  // h1994st: Initialize option.
+  nghttp2_option_new(&http2_option);
+}
 
-Config::~Config() {}
+Config::~Config() { nghttp2_option_del(http2_option); /* h1994st: Delete option. */ }
 
 namespace {
 void stream_timeout_cb(struct ev_loop *loop, ev_timer *w, int revents) {
@@ -825,13 +829,20 @@ int Http2Handler::on_write() { return write_(*this); }
 int Http2Handler::connection_made() {
   int r;
 
-  r = nghttp2_session_server_new(&session_, sessions_->get_callbacks(), this);
+  auto config = sessions_->get_config();
+  // r = nghttp2_session_server_new(&session_, sessions_->get_callbacks(), this);
+  // h1994st: Initialize server session with option
+  if (config->defense) {
+    hx_nghttp2_option_set_wfp_defense(config->http2_option, 1, 1);
+  }
+  r = nghttp2_session_server_new2(&session_, sessions_->get_callbacks(),
+                                  this, config->http2_option);
 
   if (r != 0) {
     return r;
   }
 
-  auto config = sessions_->get_config();
+  // auto config = sessions_->get_config();
   std::array<nghttp2_settings_entry, 4> entry;
   size_t niv = 1;
 
