@@ -1678,6 +1678,12 @@ HTTP/2 and SPDY:
               via Link header field  is also supported.  SPDY frontend
               does not support server push.
 
+Defense:
+  --frontend-defense
+              Enable frontend(upstream) defense.
+  --backend-defense
+              Enable backend(downstream) defense.
+
 Mode:
   (default mode)
               Accept  HTTP/2,  SPDY  and HTTP/1.1  over  SSL/TLS.   If
@@ -2274,6 +2280,16 @@ void process_options(
   mod_config()->http2.upstream.callbacks = create_http2_upstream_callbacks();
   mod_config()->http2.downstream.callbacks =
       create_http2_downstream_callbacks();
+
+  // h1994st: Set defense options.
+  if (get_config()->http2.upstream.defense) {
+    hx_nghttp2_option_set_wfp_defense(mod_config()->http2.upstream.option,
+                                      1, 1);
+  }
+  if (get_config()->http2.downstream.defense) {
+    hx_nghttp2_option_set_wfp_defense(mod_config()->http2.downstream.option,
+                                      1, 1);
+  }
 }
 } // namespace
 
@@ -2467,6 +2483,8 @@ int main(int argc, char **argv) {
         {SHRPX_OPT_BACKEND_TLS, no_argument, &flag, 120},
         {SHRPX_OPT_BACKEND_CONNECTIONS_PER_HOST, required_argument, &flag, 121},
         {SHRPX_OPT_ERROR_PAGE, required_argument, &flag, 122},
+        {SHRPX_OPT_FRONTEND_DEFENSE, no_argument, &flag, 123},
+        {SHRPX_OPT_BACKEND_DEFENSE, no_argument, &flag, 124},
         {nullptr, 0, nullptr, 0}};
 
     int option_index = 0;
@@ -2988,6 +3006,14 @@ int main(int argc, char **argv) {
       case 122:
         // --error-page
         cmdcfgs.emplace_back(SHRPX_OPT_ERROR_PAGE, optarg);
+        break;
+      case 123:
+        // h1994st: --frontend-defense
+        cmdcfgs.emplace_back(SHRPX_OPT_FRONTEND_DEFENSE, "yes");
+        break;
+      case 124:
+        // h1994st: --backend-defense
+        cmdcfgs.emplace_back(SHRPX_OPT_BACKEND_DEFENSE, "yes");
         break;
       default:
         break;

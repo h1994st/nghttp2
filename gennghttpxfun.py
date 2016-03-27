@@ -129,6 +129,8 @@ OPTIONS = [
     "backend-tls",
     "backend-connections-per-host",
     "error-page",
+    "frontend-defense",
+    "backend-defense",
 ]
 
 LOGVARS = [

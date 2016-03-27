@@ -238,6 +238,8 @@ constexpr char SHRPX_OPT_BACKEND_TLS[] = "backend-tls";
 constexpr char SHRPX_OPT_BACKEND_CONNECTIONS_PER_HOST[] =
     "backend-connections-per-host";
 constexpr char SHRPX_OPT_ERROR_PAGE[] = "error-page";
+constexpr char SHRPX_OPT_FRONTEND_DEFENSE[] = "frontend-defense"; // h1994st: Defense Flag
+constexpr char SHRPX_OPT_BACKEND_DEFENSE[] = "backend-defense";
 
 constexpr size_t SHRPX_OBFUSCATED_NODE_LENGTH = 8;
 
@@ -497,6 +499,7 @@ struct Http2Config {
     size_t window_bits;
     size_t connection_window_bits;
     size_t max_concurrent_streams;
+    bool defense; // h1994st: Defense Flag.
   } upstream;
   struct {
     nghttp2_option *option;
@@ -504,6 +507,7 @@ struct Http2Config {
     size_t window_bits;
     size_t connection_window_bits;
     size_t max_concurrent_streams;
+    bool defense; // h1994st: Defense Flag.
   } downstream;
   struct {
     ev_tstamp stream_read;

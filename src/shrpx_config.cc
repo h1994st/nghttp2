@@ -777,6 +777,7 @@ enum {
   SHRPX_OPTID_BACKEND_ADDRESS_FAMILY,
   SHRPX_OPTID_BACKEND_CONNECTIONS_PER_FRONTEND,
   SHRPX_OPTID_BACKEND_CONNECTIONS_PER_HOST,
+  SHRPX_OPTID_BACKEND_DEFENSE,
   SHRPX_OPTID_BACKEND_HTTP_PROXY_URI,
   SHRPX_OPTID_BACKEND_HTTP1_CONNECTIONS_PER_FRONTEND,
   SHRPX_OPTID_BACKEND_HTTP1_CONNECTIONS_PER_HOST,
@@ -814,6 +815,7 @@ enum {
   SHRPX_OPTID_FORWARDED_BY,
   SHRPX_OPTID_FORWARDED_FOR,
   SHRPX_OPTID_FRONTEND,
+  SHRPX_OPTID_FRONTEND_DEFENSE,
   SHRPX_OPTID_FRONTEND_FRAME_DEBUG,
   SHRPX_OPTID_FRONTEND_HTTP2_CONNECTION_WINDOW_BITS,
   SHRPX_OPTID_FRONTEND_HTTP2_DUMP_REQUEST_HEADER,
@@ -1145,6 +1147,9 @@ int option_lookup_token(const char *name, size_t namelen) {
   case 15:
     switch (name[14]) {
     case 'e':
+      if (util::strieq_l("backend-defens", name, 14)) {
+        return SHRPX_OPTID_BACKEND_DEFENSE;
+      }
       if (util::strieq_l("no-host-rewrit", name, 14)) {
         return SHRPX_OPTID_NO_HOST_REWRITE;
       }
@@ -1174,6 +1179,9 @@ int option_lookup_token(const char *name, size_t namelen) {
       }
       if (util::strieq_l("client-cert-fil", name, 15)) {
         return SHRPX_OPTID_CLIENT_CERT_FILE;
+      }
+      if (util::strieq_l("frontend-defens", name, 15)) {
+        return SHRPX_OPTID_FRONTEND_DEFENSE;
       }
       if (util::strieq_l("private-key-fil", name, 15)) {
         return SHRPX_OPTID_PRIVATE_KEY_FILE;
@@ -1631,6 +1639,16 @@ int parse_config(const char *opt, const char *optarg,
   auto optid = option_lookup_token(opt, strlen(opt));
 
   switch (optid) {
+  case SHRPX_OPTID_FRONTEND_DEFENSE: // h1994st: Defense Option ID
+  case SHRPX_OPTID_BACKEND_DEFENSE: {
+    if (optid == SHRPX_OPTID_FRONTEND_DEFENSE) {
+      mod_config()->http2.upstream.defense = true;
+    } else {
+      mod_config()->http2.downstream.defense = true;
+    }
+
+    return 0;
+  }
   case SHRPX_OPTID_BACKEND: {
     auto src = StringRef{optarg};
     auto addr_end = std::find(std::begin(src), std::end(src), ';');

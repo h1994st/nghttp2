@@ -2506,7 +2506,7 @@ Options:
   --max-concurrent-streams=<N>
               The  number of  concurrent  pushed  streams this  client
               accepts.
-  --defense   Enable website fingerprinting defense.
+  --defense   Enable defense.
   --version   Display version information and exit.
   -h, --help  Display this help and exit.
 
