@@ -6791,7 +6791,8 @@ int nghttp2_session_pack_data(nghttp2_session *session, nghttp2_bufs *bufs,
      DUMMY frame. */
   if ((session->opt_flags & HX_NGHTTP2_OPTMASK_WFP_DEFENSE) &&
       (session->opt_flags & HX_NGHTTP2_OPTMASK_DUMMY_FRAME_INJECTION)) {
-    DEBUGF(fprintf(stderr, "[h1994st] send: current buf avail=%zu\n", avail));
+    DEBUGF(fprintf(stderr, "[h1994st] send: current buf avail=%zu\n",
+                   nghttp2_buf_avail(buf)));
     assert(nghttp2_buf_avail(buf) + 1 >= frame->data.padlen);
 
     if (nghttp2_buf_avail(buf) != frame->data.padlen &&
