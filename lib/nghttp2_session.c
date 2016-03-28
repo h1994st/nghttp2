@@ -1826,6 +1826,8 @@ static int session_headers_add_pad(nghttp2_session *session,
   framebufs = &aob->framebufs;
   avail = nghttp2_buf_avail(&framebufs->head->buf);
 
+  DEBUGF(fprintf(stderr, "[h1994st] send: head avail=%zu\n", avail));
+
   max_payloadlen = nghttp2_min(NGHTTP2_MAX_PAYLOADLEN,
                                frame->hd.length + NGHTTP2_MAX_PADLEN);
 
@@ -2188,6 +2190,9 @@ static int session_prep_frame(nghttp2_session *session,
                      session->aob.framebufs.cur->buf.pos[3],
                      nghttp2_buf_len(&session->aob.framebufs.cur->buf),
                      nghttp2_bufs_cur_avail(&session->aob.framebufs)));
+
+      assert(
+        nghttp2_bufs_cur_avail(&session->aob.framebufs) >= NGHTTP2_FRAME_HDLEN);
 
       /* h1994st: Inject DUMMY frame here. */
       hx_nghttp2_dummy *dummy;
