@@ -1824,9 +1824,11 @@ static int session_headers_add_pad(nghttp2_session *session,
 
   aob = &session->aob;
   framebufs = &aob->framebufs;
-  avail = nghttp2_buf_avail(&framebufs->head->buf);
+  avail = nghttp2_buf_avail(&framebufs->head->buf) + 1;
 
-  DEBUGF(fprintf(stderr, "[h1994st] send: head avail=%zu\n", avail));
+  DEBUGF(fprintf(stderr, "[h1994st] send: head all (pad length field & trail "
+                         "padding content) avail=%zu\n",
+                 avail));
 
   max_payloadlen = nghttp2_min(NGHTTP2_MAX_PAYLOADLEN,
                                frame->hd.length + NGHTTP2_MAX_PADLEN);
@@ -1835,7 +1837,7 @@ static int session_headers_add_pad(nghttp2_session *session,
   if ((session->opt_flags & HX_NGHTTP2_OPTMASK_WFP_DEFENSE) &&
       framebufs->random_enabled) {
     // h1994st: Consider about the actual available size of the buffer
-    max_payloadlen = nghttp2_min(frame->hd.length + avail + 1,
+    max_payloadlen = nghttp2_min(frame->hd.length + avail,
                                  max_payloadlen);
   }
 
