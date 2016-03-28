@@ -1835,7 +1835,7 @@ static int session_headers_add_pad(nghttp2_session *session,
   if ((session->opt_flags & HX_NGHTTP2_OPTMASK_WFP_DEFENSE) &&
       framebufs->random_enabled) {
     // h1994st: Consider about the actual available size of the buffer
-    max_payloadlen = nghttp2_min(frame->hd.length + avail,
+    max_payloadlen = nghttp2_min(frame->hd.length + avail + 1,
                                  max_payloadlen);
   }
 
@@ -2191,25 +2191,27 @@ static int session_prep_frame(nghttp2_session *session,
                      nghttp2_buf_len(&session->aob.framebufs.cur->buf),
                      nghttp2_bufs_cur_avail(&session->aob.framebufs)));
 
-      assert(
+      assert(nghttp2_bufs_cur_avail(&session->aob.framebufs) == 0 ||
         nghttp2_bufs_cur_avail(&session->aob.framebufs) >= NGHTTP2_FRAME_HDLEN);
 
-      /* h1994st: Inject DUMMY frame here. */
-      hx_nghttp2_dummy *dummy;
-      dummy = nghttp2_mem_malloc(mem, sizeof(hx_nghttp2_dummy));
+      if (nghttp2_bufs_cur_avail(&session->aob.framebufs)) {
+        /* h1994st: Inject DUMMY frame here. */
+        hx_nghttp2_dummy *dummy;
+        dummy = nghttp2_mem_malloc(mem, sizeof(hx_nghttp2_dummy));
 
-      hx_nghttp2_frame_dummy_init(
-        dummy,
-        nghttp2_bufs_cur_avail(&session->aob.framebufs) - NGHTTP2_FRAME_HDLEN);
+        hx_nghttp2_frame_dummy_init(
+          dummy,
+          nghttp2_bufs_cur_avail(&session->aob.framebufs) - NGHTTP2_FRAME_HDLEN);
 
-      rv = hx_nghttp2_frame_pack_dummy(&session->aob.framebufs, dummy);
-      if (rv != 0) {
-        return rv;
+        rv = hx_nghttp2_frame_pack_dummy(&session->aob.framebufs, dummy);
+        if (rv != 0) {
+          return rv;
+        }
+
+        hx_nghttp2_frame_dummy_free(dummy);
+
+        nghttp2_mem_free(mem, dummy);
       }
-
-      hx_nghttp2_frame_dummy_free(dummy);
-
-      nghttp2_mem_free(mem, dummy);
 
       DEBUGF(fprintf(stderr, "[h1994st] after injection: current buffer type=%u,"
                              " len=%zu, avail=%zu\n",
