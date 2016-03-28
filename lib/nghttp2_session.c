@@ -2194,7 +2194,7 @@ static int session_prep_frame(nghttp2_session *session,
                      nghttp2_bufs_cur_avail(&session->aob.framebufs)));
 
       assert(nghttp2_bufs_cur_avail(&session->aob.framebufs) == 0 ||
-        nghttp2_bufs_cur_avail(&session->aob.framebufs) >= NGHTTP2_FRAME_HDLEN);
+             nghttp2_bufs_cur_avail(&session->aob.framebufs) >= NGHTTP2_FRAME_HDLEN);
 
       if (nghttp2_bufs_cur_avail(&session->aob.framebufs)) {
         /* h1994st: Inject DUMMY frame here. */
@@ -2312,6 +2312,45 @@ static int session_prep_frame(nghttp2_session *session,
 
       return rv;
     }
+
+    if ((session->opt_flags & HX_NGHTTP2_OPTMASK_WFP_DEFENSE) &&
+        (session->opt_flags & HX_NGHTTP2_OPTMASK_DUMMY_FRAME_INJECTION)) {
+    
+      DEBUGF(fprintf(stderr, "[h1994st] before injection: current buffer type=%u,"
+                             " len=%zu, avail=%zu\n",
+                     session->aob.framebufs.cur->buf.pos[3],
+                     nghttp2_buf_len(&session->aob.framebufs.cur->buf),
+                     nghttp2_bufs_cur_avail(&session->aob.framebufs)));
+
+      assert(nghttp2_bufs_cur_avail(&session->aob.framebufs) == 0 ||
+             nghttp2_bufs_cur_avail(&session->aob.framebufs) >= NGHTTP2_FRAME_HDLEN);
+
+      if (nghttp2_bufs_cur_avail(&session->aob.framebufs)) {
+        /* h1994st: Inject DUMMY frame here. */
+        hx_nghttp2_dummy *dummy;
+        dummy = nghttp2_mem_malloc(mem, sizeof(hx_nghttp2_dummy));
+
+        hx_nghttp2_frame_dummy_init(
+          dummy,
+          nghttp2_bufs_cur_avail(&session->aob.framebufs) - NGHTTP2_FRAME_HDLEN);
+
+        rv = hx_nghttp2_frame_pack_dummy(&session->aob.framebufs, dummy);
+        if (rv != 0) {
+          return rv;
+        }
+
+        hx_nghttp2_frame_dummy_free(dummy);
+
+        nghttp2_mem_free(mem, dummy);
+      }
+
+      DEBUGF(fprintf(stderr, "[h1994st] after injection: current buffer type=%u,"
+                             " len=%zu, avail=%zu\n",
+                     session->aob.framebufs.cur->buf.pos[3],
+                     nghttp2_buf_len(&session->aob.framebufs.cur->buf),
+                     nghttp2_bufs_cur_avail(&session->aob.framebufs)));
+    }
+
     return 0;
   }
 }
