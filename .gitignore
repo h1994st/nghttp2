@@ -1,6 +1,9 @@
 # emacs backup file
 *~
 
+# vim
+*.swp
+
 # autotools
 *.la
 *.lo
@@ -55,3 +58,4 @@ _VC_ROOT/
 *.pyd
 *.egg-info/
 python/nghttp2.c
+python/build/
