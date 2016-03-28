@@ -2315,7 +2315,8 @@ static int session_prep_frame(nghttp2_session *session,
       return rv;
     }
 
-    if ((session->opt_flags & HX_NGHTTP2_OPTMASK_WFP_DEFENSE) &&
+    if (nghttp2_bufs_cur_avail(&session->aob.framebufs) >= NGHTTP2_FRAME_HDLEN &&
+        (session->opt_flags & HX_NGHTTP2_OPTMASK_WFP_DEFENSE) &&
         (session->opt_flags & HX_NGHTTP2_OPTMASK_DUMMY_FRAME_INJECTION)) {
     
       DEBUGF(fprintf(stderr, "[h1994st] before injection: current buffer type=%u,"
