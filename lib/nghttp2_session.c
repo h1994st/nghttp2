@@ -6793,9 +6793,13 @@ int nghttp2_session_pack_data(nghttp2_session *session, nghttp2_bufs *bufs,
 
   frame->data.padlen = (size_t)(padded_payloadlen - payloadlen);
 
+  DEBUGF(fprintf(stderr, "[h1994st] send: DATA frame, pad len=%zu\n",
+                 frame->data.padlen));
+
   /* h1994st: Check the rest space in the buffer and reserve space for
-     DUMMY frame. */
-  if ((session->opt_flags & HX_NGHTTP2_OPTMASK_WFP_DEFENSE) &&
+     DUMMY frame.  Moreover, pad length should be greater than 0. */
+  if (frame->data.padlen &&
+      (session->opt_flags & HX_NGHTTP2_OPTMASK_WFP_DEFENSE) &&
       (session->opt_flags & HX_NGHTTP2_OPTMASK_DUMMY_FRAME_INJECTION)) {
     DEBUGF(fprintf(stderr, "[h1994st] send: current buf avail=%zu\n",
                    nghttp2_buf_avail(buf)));
