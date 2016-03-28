@@ -1862,6 +1862,8 @@ static int session_headers_add_pad(nghttp2_session *session,
       DEBUGF(fprintf(stderr, "[h1994st] send: before reserving, padlen=%zu\n",
                      padlen));
 
+      assert(avail - 1 >= NGHTTP2_FRAME_HDLEN); // h1994st: Ensure enough the trail space
+
       padlen = avail - NGHTTP2_FRAME_HDLEN; // h1994st: Reserve at least 9 bytes for DUMMY frame
 
       DEBUGF(fprintf(stderr, "[h1994st] send: after reserving, padlen=%zu\n",
@@ -6789,7 +6791,8 @@ int nghttp2_session_pack_data(nghttp2_session *session, nghttp2_bufs *bufs,
      DUMMY frame. */
   if ((session->opt_flags & HX_NGHTTP2_OPTMASK_WFP_DEFENSE) &&
       (session->opt_flags & HX_NGHTTP2_OPTMASK_DUMMY_FRAME_INJECTION)) {
-    assert(nghttp2_buf_avail(buf) >= frame->data.padlen);
+    DEBUGF(fprintf(stderr, "[h1994st] send: current buf avail=%zu\n", avail));
+    assert(nghttp2_buf_avail(buf) + 1 >= frame->data.padlen);
 
     if (nghttp2_buf_avail(buf) != frame->data.padlen &&
         nghttp2_buf_avail(buf) < frame->data.padlen + NGHTTP2_FRAME_HDLEN) {
@@ -6798,7 +6801,9 @@ int nghttp2_session_pack_data(nghttp2_session *session, nghttp2_bufs *bufs,
       DEBUGF(fprintf(stderr, "[h1994st] send: before reserving, padlen=%zu\n",
                      frame->data.padlen));
 
-      frame->data.padlen = nghttp2_buf_avail(buf) - NGHTTP2_FRAME_HDLEN; // h1994st: Reserve at least 9 bytes for DUMMY frame
+      assert(nghttp2_buf_avail(buf) >= NGHTTP2_FRAME_HDLEN);
+
+      frame->data.padlen = nghttp2_buf_avail(buf) + 1 - NGHTTP2_FRAME_HDLEN; // h1994st: Reserve at least 9 bytes for DUMMY frame
 
       DEBUGF(fprintf(stderr, "[h1994st] send: after reserving, padlen=%zu\n",
                      frame->data.padlen));
