@@ -1210,6 +1210,7 @@ int HttpClient::write_tls() {
   for (;;) {
     if (wb.rleft() > 0) {
       auto rv = SSL_write(ssl, wb.pos, wb.rleft());
+      std::cerr << "[h1994st] buf len: " << wb.rleft() << ", write: " << rv << std::endl;
 
       if (rv <= 0) {
         auto err = SSL_get_error(ssl, rv);

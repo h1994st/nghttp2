@@ -58,7 +58,10 @@ template <size_t N> struct Memchunk {
         next(nullptr) {}
   size_t len() const { return last - pos; }
   size_t left() const { return end - last; }
-  void reset() { pos = last = std::begin(buf); }
+  void reset() {
+    pos = last = std::begin(buf);
+    end = std::end(buf);
+  }
   void resize(size_t sz) {
     // h1994st: normal reset
     reset();
@@ -293,6 +296,13 @@ template <typename Memchunk> struct Memchunks {
     }
     len = 0;
     head = tail = nullptr;
+  }
+  void next_chunk() {
+    tail->end = tail->last;
+    assert(tail->left() == 0);
+
+    tail->next = pool->get();
+    tail = tail->next;
   }
 
   Pool<Memchunk> *pool;

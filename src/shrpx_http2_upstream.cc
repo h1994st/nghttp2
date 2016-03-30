@@ -754,6 +754,13 @@ int hx_send_data_callback(nghttp2_session *session, nghttp2_frame *frame,
 
   wb->append(dummy_frame, dummy_length);
 
+  wb->next_chunk(); // h1994st: important!!! set current chunk to full
+
+  // h1994st: LOG
+  if (LOG_ENABLED(INFO)) {
+    ULOG(INFO, upstream) << "[h1949st] next chunk";
+  }
+
   downstream->reset_upstream_wtimer();
 
   if (length > 0 && downstream->resume_read(SHRPX_NO_BUFFER, length) != 0) {
@@ -1023,6 +1030,12 @@ int Http2Upstream::on_write() {
       break;
     }
     wb_.append(data, datalen);
+
+    wb_.next_chunk(); // h1994st: !!! set current to full, move to next
+    // h1994st: LOG
+    if (LOG_ENABLED(INFO)) {
+      ULOG(INFO, this) << "[h1949st] next chunk";
+    }
   }
 
   if (nghttp2_session_want_read(session_) == 0 &&
