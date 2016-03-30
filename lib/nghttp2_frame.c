@@ -908,9 +908,6 @@ int nghttp2_frame_add_pad(nghttp2_bufs *bufs, nghttp2_frame_hd *hd,
 
   assert(nghttp2_buf_avail(buf) >= padlen - 1);
 
-  // h1994st:
-  assert(nghttp2_buf_len(buf) == hd->length + NGHTTP2_FRAME_HDLEN);
-
   frame_set_pad(buf, padlen, framehd_only);
 
   hd->length += padlen;

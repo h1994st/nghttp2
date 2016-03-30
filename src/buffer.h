@@ -38,18 +38,26 @@ template <size_t N> struct Buffer {
   // Returns the number of bytes to read.
   size_t rleft() const { return last - pos; }
   // Returns the number of bytes this buffer can store.
-  size_t wleft() const { return std::end(buf) - last; }
+  size_t wleft() const { return end - last; }
   // Writes up to min(wleft(), |count|) bytes from buffer pointed by
   // |src|.  Returns number of bytes written.
   size_t write(const void *src, size_t count) {
     count = std::min(count, wleft());
     auto p = static_cast<const uint8_t *>(src);
     last = std::copy_n(p, count, last);
+
+    // h1994st:
+    end = last;
+
     return count;
   }
   size_t write(size_t count) {
     count = std::min(count, wleft());
     last += count;
+
+    // h1994st:
+    end = last;
+
     return count;
   }
   // Drains min(rleft(), |count|) bytes from start of the buffer.
@@ -65,12 +73,18 @@ template <size_t N> struct Buffer {
     pos = std::begin(buf);
     return count;
   }
-  void reset() { pos = last = std::begin(buf); }
+  void reset() {
+    pos = last = std::begin(buf);
+    end = std::end(buf);
+  }
   uint8_t *begin() { return std::begin(buf); }
   uint8_t &operator[](size_t n) { return buf[n]; }
   const uint8_t &operator[](size_t n) const { return buf[n]; }
   std::array<uint8_t, N> buf;
   uint8_t *pos, *last;
+
+  // h1994st:
+  uint8_t *end;
 };
 
 } // namespace nghttp2

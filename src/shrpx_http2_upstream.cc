@@ -754,6 +754,7 @@ int hx_send_data_callback(nghttp2_session *session, nghttp2_frame *frame,
 
   wb->append(dummy_frame, dummy_length);
 
+  assert(get_config()->http2.upstream.defense);
   wb->next_chunk(); // h1994st: important!!! set current chunk to full
 
   // h1994st: LOG
@@ -1031,10 +1032,13 @@ int Http2Upstream::on_write() {
     }
     wb_.append(data, datalen);
 
-    wb_.next_chunk(); // h1994st: !!! set current to full, move to next
-    // h1994st: LOG
-    if (LOG_ENABLED(INFO)) {
-      ULOG(INFO, this) << "[h1949st] next chunk";
+    if (get_config()->http2.upstream.defense) {
+      wb_.next_chunk(); // h1994st: !!! set current to full, move to next
+
+      // h1994st: LOG
+      if (LOG_ENABLED(INFO)) {
+        ULOG(INFO, this) << "[h1949st] next chunk";
+      }
     }
   }
 
