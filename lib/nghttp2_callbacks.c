@@ -134,6 +134,13 @@ void nghttp2_session_callbacks_set_send_data_callback(
   cbs->send_data_callback = send_data_callback;
 }
 
+// h1994st:
+void hx_nghttp2_session_callbacks_set_send_data_callback(
+    nghttp2_session_callbacks *cbs,
+    hx_nghttp2_send_data_callback hx_send_data_callback) {
+  cbs->hx_send_data_callback = hx_send_data_callback;
+}
+
 void nghttp2_session_callbacks_set_pack_extension_callback(
     nghttp2_session_callbacks *cbs,
     nghttp2_pack_extension_callback pack_extension_callback) {

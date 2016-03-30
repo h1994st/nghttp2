@@ -729,6 +729,47 @@ int send_data_callback(nghttp2_session *session, nghttp2_frame *frame,
 } // namespace
 
 namespace {
+int hx_send_data_callback(nghttp2_session *session, nghttp2_frame *frame,
+                         const uint8_t *framehd, size_t length,
+                         nghttp2_data_source *source,
+                         const uint8_t *dummy_frame, size_t dummy_length,
+                         void *user_data) {
+  auto downstream = static_cast<Downstream *>(source->ptr);
+  auto upstream = static_cast<Http2Upstream *>(downstream->get_upstream());
+  auto body = downstream->get_response_buf();
+
+  auto wb = upstream->get_response_buf();
+
+  size_t padlen = 0;
+
+  wb->append(framehd, 9);
+  if (frame->data.padlen > 0) {
+    padlen = frame->data.padlen - 1;
+    wb->append(static_cast<uint8_t>(padlen));
+  }
+
+  body->remove(*wb, length);
+
+  wb->append(PADDING.data(), padlen);
+
+  wb->append(dummy_frame, dummy_length);
+
+  downstream->reset_upstream_wtimer();
+
+  if (length > 0 && downstream->resume_read(SHRPX_NO_BUFFER, length) != 0) {
+    return NGHTTP2_ERR_CALLBACK_FAILURE;
+  }
+
+  // We have to add length here, so that we can log this amount of
+  // data transferred.
+  downstream->response_sent_body_length += length;
+
+  return wb->rleft() >= MAX_BUFFER_SIZE ? NGHTTP2_ERR_PAUSE : 0;
+}
+} // namespace
+
+
+namespace {
 uint32_t infer_upstream_rst_stream_error_code(uint32_t downstream_error_code) {
   // NGHTTP2_REFUSED_STREAM is important because it tells upstream
   // client to retry.
@@ -831,6 +872,9 @@ nghttp2_session_callbacks *create_http2_upstream_callbacks() {
 
   nghttp2_session_callbacks_set_send_data_callback(callbacks,
                                                    send_data_callback);
+
+  hx_nghttp2_session_callbacks_set_send_data_callback(callbacks,
+                                                      hx_send_data_callback);
 
   if (get_config()->padding) {
     nghttp2_session_callbacks_set_select_padding_callback(

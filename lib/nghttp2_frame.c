@@ -859,6 +859,8 @@ static void frame_set_pad(nghttp2_buf *buf, size_t padlen, int framehd_only) {
   nghttp2_put_uint32be(buf->pos, (uint32_t)((newlen << 8) + buf->pos[3]));
 
   if (framehd_only) {
+    // h1949st: Move last pointer.
+    buf->last += (padlen - 1);
     return;
   }
 
@@ -905,6 +907,9 @@ int nghttp2_frame_add_pad(nghttp2_bufs *bufs, nghttp2_frame_hd *hd,
   buf = &bufs->head->buf;
 
   assert(nghttp2_buf_avail(buf) >= padlen - 1);
+
+  // h1994st:
+  assert(nghttp2_buf_len(buf) == hd->length + NGHTTP2_FRAME_HDLEN);
 
   frame_set_pad(buf, padlen, framehd_only);
 

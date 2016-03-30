@@ -2189,7 +2189,7 @@ static int session_prep_frame(nghttp2_session *session,
 
     if ((session->opt_flags & HX_NGHTTP2_OPTMASK_WFP_DEFENSE) &&
         (session->opt_flags & HX_NGHTTP2_OPTMASK_DUMMY_FRAME_INJECTION)) {
-    
+
       DEBUGF(fprintf(stderr, "[h1994st] before injection: current buffer type=%u,"
                              " len=%zu, avail=%zu\n",
                      session->aob.framebufs.cur->buf.pos[3],
@@ -2933,9 +2933,29 @@ static int session_call_send_data(nghttp2_session *session,
   DEBUGF(fprintf(stderr, "[h1994st] send: frame data len=%zu, pad len=%zu\n",
                  length, frame->data.padlen));
 
-  rv = session->callbacks.send_data_callback(session, frame, buf->pos, length,
-                                             &aux_data->data_prd.source,
-                                             session->user_data);
+  if ((session->opt_flags & HX_NGHTTP2_OPTMASK_WFP_DEFENSE) &&
+      (session->opt_flags & HX_NGHTTP2_OPTMASK_DUMMY_FRAME_INJECTION)) {
+    DEBUGF(fprintf(stderr, "[h1994st] send: defense and injection enabled\n"));
+    assert(session->callbacks.hx_send_data_callback); /* h1994st: special callback. */
+    DEBUGF(fprintf(stderr, "[h1994st] send: DATA len=%zu\n", length));
+    DEBUGF(fprintf(stderr, "[h1994st] send: DATA padlen=%zu\n", frame->data.padlen));
+    DEBUGF(fprintf(stderr, "[h1994st] send: buf total sz=%zu\n", nghttp2_buf_cap(buf)));
+    DEBUGF(fprintf(stderr, "[h1994st] send: buf avail=%zu\n", nghttp2_buf_avail(buf)));
+    assert(buf->end == buf->last); /* h1994st: buffer must be full. */
+
+    uint8_t *dummy = buf->pos + NGHTTP2_FRAME_HDLEN + frame->hd.length;
+    size_t dummy_length = buf->end - dummy;
+    DEBUGF(fprintf(stderr, "[h1994st] send: DUMMY len=%zu\n", dummy_length));
+    rv = session->callbacks.hx_send_data_callback(session, frame, buf->pos, length,
+                                                  &aux_data->data_prd.source,
+                                                  dummy,
+                                                  dummy_length,
+                                                  session->user_data);
+  } else {
+    rv = session->callbacks.send_data_callback(session, frame, buf->pos, length,
+                                               &aux_data->data_prd.source,
+                                               session->user_data);
+  }
 
   DEBUGF(fprintf(stderr, "[h1994st] send: after send_data_callback\n"));
 
@@ -6776,6 +6796,16 @@ int nghttp2_session_pack_data(nghttp2_session *session, nghttp2_bufs *bufs,
   }
 
   if (data_flags & NGHTTP2_DATA_FLAG_NO_COPY) {
+    if ((session->opt_flags & HX_NGHTTP2_OPTMASK_WFP_DEFENSE) &&
+        session->callbacks.hx_send_data_callback == NULL) {
+      /* h1994st: Defense enabled. */
+      DEBUGF(fprintf(
+          stderr,
+          "[h1994st] NGHTTP2_DATA_FLAG_NO_COPY requires "
+          "hx_send_data_callback set\n"));
+
+      return NGHTTP2_ERR_CALLBACK_FAILURE;
+    }
     if (session->callbacks.send_data_callback == NULL) {
       DEBUGF(fprintf(
           stderr,

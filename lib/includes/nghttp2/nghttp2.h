@@ -1338,6 +1338,15 @@ typedef int (*nghttp2_send_data_callback)(nghttp2_session *session,
                                           nghttp2_data_source *source,
                                           void *user_data);
 
+// h1994st: send data no copy with dummy frame injection
+typedef int (*hx_nghttp2_send_data_callback)(nghttp2_session *session,
+                                             nghttp2_frame *frame,
+                                             const uint8_t *framehd, size_t length,
+                                             nghttp2_data_source *source,
+                                             const uint8_t *dummy_frame,
+                                             size_t dummy_length,
+                                             void *user_data);
+
 /**
  * @functypedef
  *
@@ -2129,6 +2138,11 @@ NGHTTP2_EXTERN void nghttp2_session_callbacks_set_on_begin_frame_callback(
 NGHTTP2_EXTERN void nghttp2_session_callbacks_set_send_data_callback(
     nghttp2_session_callbacks *cbs,
     nghttp2_send_data_callback send_data_callback);
+
+// h1994st:
+NGHTTP2_EXTERN void hx_nghttp2_session_callbacks_set_send_data_callback(
+    nghttp2_session_callbacks *cbs,
+    hx_nghttp2_send_data_callback hx_send_data_callback);
 
 /**
  * @function

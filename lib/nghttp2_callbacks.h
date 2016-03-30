@@ -108,6 +108,7 @@ struct nghttp2_session_callbacks {
    */
   nghttp2_on_begin_frame_callback on_begin_frame_callback;
   nghttp2_send_data_callback send_data_callback;
+  hx_nghttp2_send_data_callback hx_send_data_callback; /* h1994st: send data callback, no copy with dummy frame injection. */
   nghttp2_pack_extension_callback pack_extension_callback;
   nghttp2_unpack_extension_callback unpack_extension_callback;
   nghttp2_on_extension_chunk_recv_callback on_extension_chunk_recv_callback;
