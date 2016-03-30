@@ -964,6 +964,12 @@ int Http2Upstream::on_write() {
     const uint8_t *data;
     auto datalen = nghttp2_session_mem_send(session_, &data);
 
+    // h1994st: LOG
+    if (LOG_ENABLED(INFO)) {
+      ULOG(INFO, this) << "[h1994st] nghttp2_session_mem_send, return value="
+                       << datalen;
+    }
+
     if (datalen < 0) {
       ULOG(ERROR, this) << "nghttp2_session_mem_send() returned error: "
                         << nghttp2_strerror(datalen);

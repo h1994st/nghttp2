@@ -53,13 +53,24 @@ template <size_t N> struct Memchunk {
   Memchunk(std::unique_ptr<Memchunk> next_chunk)
       : pos(std::begin(buf)),
         last(pos),
+        end(std::end(buf)), /* h1994st: Initialize end pointer. */
         knext(std::move(next_chunk)),
         next(nullptr) {}
   size_t len() const { return last - pos; }
-  size_t left() const { return std::end(buf) - last; }
+  size_t left() const { return end - last; }
   void reset() { pos = last = std::begin(buf); }
+  void resize(size_t sz) {
+    // h1994st: normal reset
+    reset();
+
+    assert(sz <= size);
+
+    // h1994st: resize
+    end = std::begin(buf) + sz;
+  }
   std::array<uint8_t, N> buf;
   uint8_t *pos, *last;
+  uint8_t *end; /* h1994st: Add a end pointer for the mem chunk. */
   std::unique_ptr<Memchunk> knext;
   Memchunk *next;
   static const size_t size = N;

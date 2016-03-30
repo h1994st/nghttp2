@@ -1852,7 +1852,8 @@ static int session_headers_add_pad(nghttp2_session *session,
 
   /* h1994st: Check the rest space in the buffer and reserve space for
      DUMMY frame. */
-  if ((session->opt_flags & HX_NGHTTP2_OPTMASK_WFP_DEFENSE) &&
+  if (padlen > 0 &&
+      (session->opt_flags & HX_NGHTTP2_OPTMASK_WFP_DEFENSE) &&
       (session->opt_flags & HX_NGHTTP2_OPTMASK_DUMMY_FRAME_INJECTION)) {
     assert(avail >= padlen);
 
@@ -2923,9 +2924,20 @@ static int session_call_send_data(nghttp2_session *session,
   length = frame->hd.length - frame->data.padlen;
   aux_data = &item->aux_data.data;
 
+  // h1994st:
+  DEBUGF(fprintf(stderr, "[h1994st] send: before send_data_callback\n"));
+  DEBUGF(fprintf(stderr, "[h1994st] send: buf len=%zu\n",
+                 nghttp2_buf_len(buf)));
+  DEBUGF(fprintf(stderr, "[h1994st] send: buf avail=%zu\n",
+                 nghttp2_buf_avail(buf)));
+  DEBUGF(fprintf(stderr, "[h1994st] send: frame data len=%zu, pad len=%zu\n",
+                 length, frame->data.padlen));
+
   rv = session->callbacks.send_data_callback(session, frame, buf->pos, length,
                                              &aux_data->data_prd.source,
                                              session->user_data);
+
+  DEBUGF(fprintf(stderr, "[h1994st] send: after send_data_callback\n"));
 
   switch (rv) {
   case 0:
@@ -6779,11 +6791,13 @@ int nghttp2_session_pack_data(nghttp2_session *session, nghttp2_bufs *bufs,
 
   max_payloadlen = nghttp2_min(datamax, frame->hd.length + NGHTTP2_MAX_PADLEN);
 
+  DEBUGF(fprintf(stderr, "[h1994st] send: DATA frame, payload len=%zu\n",
+                 frame->hd.length));
   DEBUGF(fprintf(stderr, "[h1994st] send: DATA frame, max payload len=%zu\n",
                  max_payloadlen));
 
   padded_payloadlen =
-      session_call_select_padding(session, frame, max_payloadlen);
+      session_call_select_padding(session, frame, max_payloadlen + 1);
 
   DEBUGF(fprintf(stderr, "[h1994st] send: DATA frame, padded payload len=%zu\n",
                  padded_payloadlen));
@@ -6799,15 +6813,15 @@ int nghttp2_session_pack_data(nghttp2_session *session, nghttp2_bufs *bufs,
 
   /* h1994st: Check the rest space in the buffer and reserve space for
      DUMMY frame.  Moreover, pad length should be greater than 0. */
-  if (frame->data.padlen &&
+  if (frame->data.padlen > 0 &&
       (session->opt_flags & HX_NGHTTP2_OPTMASK_WFP_DEFENSE) &&
       (session->opt_flags & HX_NGHTTP2_OPTMASK_DUMMY_FRAME_INJECTION)) {
     DEBUGF(fprintf(stderr, "[h1994st] send: current buf avail=%zu\n",
                    nghttp2_buf_avail(buf)));
     assert(nghttp2_buf_avail(buf) + 1 >= frame->data.padlen);
 
-    if (nghttp2_buf_avail(buf) != frame->data.padlen &&
-        nghttp2_buf_avail(buf) < frame->data.padlen + NGHTTP2_FRAME_HDLEN) {
+    if (nghttp2_buf_avail(buf) + 1 != frame->data.padlen &&
+        nghttp2_buf_avail(buf) + 1 < frame->data.padlen + NGHTTP2_FRAME_HDLEN) {
       DEBUGF(fprintf(stderr, "[h1994st] send: reserve %d bytes for "
                              "DUMMY frame\n", NGHTTP2_FRAME_HDLEN));
       DEBUGF(fprintf(stderr, "[h1994st] send: before reserving, padlen=%zu\n",
@@ -6823,6 +6837,13 @@ int nghttp2_session_pack_data(nghttp2_session *session, nghttp2_bufs *bufs,
   }
 
   nghttp2_frame_pack_frame_hd(buf->pos, &frame->hd);
+
+  // h1994st:
+  // if ((session->opt_flags & HX_NGHTTP2_OPTMASK_WFP_DEFENSE) &&
+  //     aux_data->no_copy) {
+  //   DEBUGF(fprintf(stderr, "[h1994st] send: change no_copy flag to 0\n"));
+  //   aux_data->no_copy = 0;
+  // }
 
   rv = nghttp2_frame_add_pad(bufs, &frame->hd, frame->data.padlen,
                              aux_data->no_copy);
