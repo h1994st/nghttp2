@@ -275,10 +275,6 @@ int ClientHandler::write_tls() {
     }
 
     auto nwrite = conn_.write_tls(iov.iov_base, iov.iov_len);
-    if (LOG_ENABLED(INFO)) {
-      CLOG(INFO, this) << "[h1994st] chunk len: " << iov.iov_len << ", "
-                       << "write: " << nwrite;
-    }
     if (nwrite < 0) {
       return -1;
     }

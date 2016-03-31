@@ -566,6 +566,10 @@ ssize_t Connection::write_tls(const void *data, size_t len) {
   tls.last_write_idle = -1.;
 
   auto rv = SSL_write(tls.ssl, data, len);
+  if (LOG_ENABLED(INFO)) {
+    LOG(INFO) << "[h1994st] SSL_write len: " << len << ", "
+              << "actual write: " << rv;
+  }
 
   if (rv <= 0) {
     auto err = SSL_get_error(tls.ssl, rv);
