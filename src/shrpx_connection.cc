@@ -508,7 +508,7 @@ int Connection::check_http2_requirement() {
 }
 
 namespace {
-const size_t SHRPX_SMALL_WRITE_LIMIT = 1300;
+const size_t SHRPX_SMALL_WRITE_LIMIT = 1419;
 } // namespace
 
 size_t Connection::get_tls_write_limit() {

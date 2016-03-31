@@ -7,7 +7,7 @@
 #include "hx_random.h"
 
 #define HX_FRAME_PAYLOAD_LEN_MIN 36
-#define HX_FRAME_PAYLOAD_LEN_MAX 1024
+#define HX_FRAME_PAYLOAD_LEN_MAX 1419
 
 ssize_t hx_get_buf_chunk_length(hx_normal_distribution *dist);
 void hx_nghttp2_buf_reset(nghttp2_buf *buf, hx_normal_distribution *dist);
