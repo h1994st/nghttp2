@@ -6827,7 +6827,7 @@ int nghttp2_session_pack_data(nghttp2_session *session, nghttp2_bufs *bufs,
                  max_payloadlen));
 
   padded_payloadlen =
-      session_call_select_padding(session, frame, max_payloadlen + 1);
+      session_call_select_padding(session, frame, max_payloadlen);
 
   DEBUGF(fprintf(stderr, "[h1994st] send: DATA frame, padded payload len=%zu\n",
                  padded_payloadlen));
