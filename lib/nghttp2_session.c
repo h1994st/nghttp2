@@ -2934,7 +2934,8 @@ static int session_call_send_data(nghttp2_session *session,
                  length, frame->data.padlen));
 
   if ((session->opt_flags & HX_NGHTTP2_OPTMASK_WFP_DEFENSE) &&
-      (session->opt_flags & HX_NGHTTP2_OPTMASK_DUMMY_FRAME_INJECTION)) {
+      (session->opt_flags & HX_NGHTTP2_OPTMASK_DUMMY_FRAME_INJECTION) &&
+      session->callbacks.hx_send_data_callback) {
     DEBUGF(fprintf(stderr, "[h1994st] send: defense and injection enabled\n"));
     assert(session->callbacks.hx_send_data_callback); /* h1994st: special callback. */
     DEBUGF(fprintf(stderr, "[h1994st] send: DATA len=%zu\n", length));
@@ -6796,16 +6797,16 @@ int nghttp2_session_pack_data(nghttp2_session *session, nghttp2_bufs *bufs,
   }
 
   if (data_flags & NGHTTP2_DATA_FLAG_NO_COPY) {
-    if ((session->opt_flags & HX_NGHTTP2_OPTMASK_WFP_DEFENSE) &&
-        session->callbacks.hx_send_data_callback == NULL) {
-      /* h1994st: Defense enabled. */
-      DEBUGF(fprintf(
-          stderr,
-          "[h1994st] NGHTTP2_DATA_FLAG_NO_COPY requires "
-          "hx_send_data_callback set\n"));
-
-      return NGHTTP2_ERR_CALLBACK_FAILURE;
-    }
+    // if ((session->opt_flags & HX_NGHTTP2_OPTMASK_WFP_DEFENSE) &&
+    //     session->callbacks.hx_send_data_callback == NULL) {
+    //   /* h1994st: Defense enabled. */
+    //   DEBUGF(fprintf(
+    //       stderr,
+    //       "[h1994st] NGHTTP2_DATA_FLAG_NO_COPY requires "
+    //       "hx_send_data_callback set\n"));
+    // 
+    //   return NGHTTP2_ERR_CALLBACK_FAILURE;
+    // }
     if (session->callbacks.send_data_callback == NULL) {
       DEBUGF(fprintf(
           stderr,

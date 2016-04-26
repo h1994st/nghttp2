@@ -7,12 +7,12 @@
 #include "nghttp2_helper.h"
 
 ssize_t hx_get_buf_chunk_length(hx_normal_distribution *dist _U_) {
-    return 1419;
-    // ssize_t chunk_len = 0;
-    // do {
-    //     chunk_len = hx_randn(dist);
-    // } while (chunk_len < HX_FRAME_PAYLOAD_LEN_MIN || chunk_len > HX_FRAME_PAYLOAD_LEN_MAX);
-    // return chunk_len + 10; // 9 bytes for frame header, 1 byte for possible pad length field
+    // return 1419;
+    ssize_t chunk_len = 0;
+    do {
+        chunk_len = hx_randn(dist);
+    } while (chunk_len < HX_FRAME_PAYLOAD_LEN_MIN || chunk_len > HX_FRAME_PAYLOAD_LEN_MAX);
+    return chunk_len + 10; // 9 bytes for frame header, 1 byte for possible pad length field
 }
 
 
