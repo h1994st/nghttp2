@@ -112,7 +112,7 @@ typedef enum {
   NGHTTP2_IB_READ_EXTENSION_PAYLOAD
 } nghttp2_inbound_state;
 
-#define NGHTTP2_INBOUND_NUM_IV 7
+#define NGHTTP2_INBOUND_NUM_IV 8 /* h1994st: original value is 7. */
 
 typedef struct {
   nghttp2_frame frame;
@@ -150,6 +150,8 @@ typedef struct {
   uint32_t initial_window_size;
   uint32_t max_frame_size;
   uint32_t max_header_list_size;
+  /* h1994st: Flag for defense. */
+  uint32_t defense_enabled;
 } nghttp2_settings_storage;
 
 typedef enum {
@@ -308,6 +310,10 @@ struct nghttp2_session {
      this session.  The nonzero does not necessarily mean
      WINDOW_UPDATE is not queued. */
   uint8_t window_update_queued;
+  /* Two flags indicating whether the defense feature is enabled at
+     the endpoints. */
+  uint8_t local_defense_enabled;
+  uint8_t remote_defense_enabled;
   /* Bitfield of extension frame types that application is willing to
      receive.  To designate the bit of given frame type i, use
      user_recv_ext_types[i / 8] & (1 << (i & 0x7)).  First 10 frame

@@ -77,6 +77,8 @@ const char *strsettingsid(int32_t id) {
     return "SETTINGS_MAX_FRAME_SIZE";
   case NGHTTP2_SETTINGS_MAX_HEADER_LIST_SIZE:
     return "SETTINGS_MAX_HEADER_LIST_SIZE";
+  case HX_NGHTTP2_SETTINGS_DEFENSE_ENABLED:
+    return "HX_SETTINGS_DEFENSE_ENABLED";
   default:
     return "UNKNOWN";
   }

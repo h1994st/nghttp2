@@ -352,6 +352,7 @@ static void init_settings(nghttp2_settings_storage *settings) {
   settings->initial_window_size = NGHTTP2_INITIAL_WINDOW_SIZE;
   settings->max_frame_size = NGHTTP2_MAX_FRAME_SIZE_MIN;
   settings->max_header_list_size = UINT32_MAX;
+  settings->defense_enabled = 0; /* h1994st: disabled by default. */
 }
 
 static void active_outbound_item_reset(nghttp2_active_outbound_item *aob,
@@ -430,6 +431,8 @@ static int session_new(nghttp2_session **session_ptr,
         option->wfp_defense) {
 
       (*session_ptr)->opt_flags |= HX_NGHTTP2_OPTMASK_WFP_DEFENSE;
+
+      (*session_ptr)->local_defense_enabled = 1;
 
       /* h1994st: Dummy frame injection. */
       if (option->dummy_frame_injection) {
@@ -4324,6 +4327,9 @@ int nghttp2_session_update_local_settings(nghttp2_session *session,
     case NGHTTP2_SETTINGS_MAX_HEADER_LIST_SIZE:
       session->local_settings.max_header_list_size = iv[i].value;
       break;
+    case HX_NGHTTP2_SETTINGS_DEFENSE_ENABLED:
+      session->local_settings.defense_enabled = iv[i].value;
+      break;
     }
   }
 
@@ -4455,6 +4461,12 @@ int nghttp2_session_on_settings_received(nghttp2_session *session,
     case NGHTTP2_SETTINGS_MAX_HEADER_LIST_SIZE:
 
       session->remote_settings.max_header_list_size = entry->value;
+
+      break;
+    case HX_NGHTTP2_SETTINGS_DEFENSE_ENABLED: // h1994st: receive SETTINGS frame from remote endpoint
+
+      session->remote_settings.defense_enabled = entry->value;
+      session->remote_defense_enabled = entry->value;
 
       break;
     }
@@ -5121,7 +5133,7 @@ static void inbound_frame_set_settings_entry(nghttp2_inbound_frame *iframe) {
   nghttp2_settings_entry iv;
   size_t i;
 
-  nghttp2_frame_unpack_settings_entry(&iv, iframe->sbuf.pos);
+  nghttp2_frame_unpack_settings_entry(&iv, iframe->sbuf.pos); // h1994st: read only one entry
 
   switch (iv.settings_id) {
   case NGHTTP2_SETTINGS_HEADER_TABLE_SIZE:
@@ -5130,6 +5142,7 @@ static void inbound_frame_set_settings_entry(nghttp2_inbound_frame *iframe) {
   case NGHTTP2_SETTINGS_INITIAL_WINDOW_SIZE:
   case NGHTTP2_SETTINGS_MAX_FRAME_SIZE:
   case NGHTTP2_SETTINGS_MAX_HEADER_LIST_SIZE:
+  case HX_NGHTTP2_SETTINGS_DEFENSE_ENABLED: // h1994st: defense setting entry
     break;
   default:
     DEBUGF(fprintf(stderr, "recv: ignore unknown settings id=0x%02x\n",
@@ -5138,13 +5151,13 @@ static void inbound_frame_set_settings_entry(nghttp2_inbound_frame *iframe) {
   }
 
   for (i = 0; i < iframe->niv; ++i) {
-    if (iframe->iv[i].settings_id == iv.settings_id) {
-      iframe->iv[i] = iv;
+    if (iframe->iv[i].settings_id == iv.settings_id) { // h1994st: if corresponding entry is duplicated
+      iframe->iv[i] = iv; // h1994st: using the latest one
       break;
     }
   }
 
-  if (i == iframe->niv) {
+  if (i == iframe->niv) { // h1994st: add new entry
     iframe->iv[iframe->niv++] = iv;
   }
 
@@ -6694,6 +6707,14 @@ int nghttp2_session_add_settings(nghttp2_session *session, uint8_t flags,
     }
   }
 
+  /* h1994st: Check the consistency of the defense feature. */
+  for (i = niv; i > 0; --i) {
+    if (iv[i - 1].settings_id == HX_NGHTTP2_SETTINGS_DEFENSE_ENABLED) {
+      assert(session->local_defense_enabled == (uint8_t)iv[i - 1].value);
+      break;
+    }
+  }
+
   return 0;
 }
 
@@ -7000,6 +7021,8 @@ uint32_t nghttp2_session_get_remote_settings(nghttp2_session *session,
     return session->remote_settings.max_frame_size;
   case NGHTTP2_SETTINGS_MAX_HEADER_LIST_SIZE:
     return session->remote_settings.max_header_list_size;
+  case HX_NGHTTP2_SETTINGS_DEFENSE_ENABLED:
+    return session->remote_settings.defense_enabled;
   }
 
   assert(0);

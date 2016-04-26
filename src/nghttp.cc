@@ -797,6 +797,12 @@ size_t populate_settings(nghttp2_settings_entry *iv) {
     ++niv;
   }
 
+  if (config.defense) { // h1994st: defense enabled, advertise it
+    iv[niv].settings_id = HX_NGHTTP2_SETTINGS_DEFENSE_ENABLED;
+    iv[niv].value = 1;
+    ++niv;
+  }
+
   return niv;
 }
 } // namespace

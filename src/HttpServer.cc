@@ -861,6 +861,12 @@ int Http2Handler::connection_made() {
     ++niv;
   }
 
+  if (config->defense) { // h1994st: defense enabled, advertise it
+    entry[niv].settings_id = HX_NGHTTP2_SETTINGS_DEFENSE_ENABLED;
+    entry[niv].value = 1;
+    ++niv;
+  }
+
   r = nghttp2_submit_settings(session_, NGHTTP2_FLAG_NONE, entry.data(), niv);
   if (r != 0) {
     return r;
